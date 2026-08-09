@@ -21,3 +21,21 @@ export function requirePermission(permissionKey: string): RequestHandler {
     next()
   }
 }
+
+export function requirePermissionAcrossAccessibleBranches(permissionKey: string): RequestHandler {
+  return (request, _response, next) => {
+    const permissions = request.header('x-branch-id')
+      ? request.branchContext?.permissions ?? []
+      : request.principal?.grants.flatMap((grant) => grant.permissions) ?? []
+
+    if (!new Set(permissions).has(permissionKey)) {
+      next(new AppError({
+        code: ErrorCode.PERMISSION_DENIED,
+        statusCode: 403,
+        message: 'The current role does not grant the required permission',
+      }))
+      return
+    }
+    next()
+  }
+}

@@ -14,6 +14,7 @@ import { createServiceCatalogModule } from './modules/service-catalog/service-ca
 import { createBookingModule } from './modules/booking/booking.module.js'
 import { createPaymentModule } from './modules/pos-payment/payment.module.js'
 import { createCommissionModule } from './modules/commission/commission.module.js'
+import { createDashboardReportModule } from './modules/dashboard-report/dashboard-report.module.js'
 import { PrismaAuditSink } from './shared/audit/audit.js'
 
 const config = loadConfig(process.env)
@@ -37,6 +38,7 @@ const app = createApp({
   bookingModule: createBookingModule(foundation),
   paymentModule: createPaymentModule(foundation),
   commissionModule: createCommissionModule(foundation),
+  dashboardReportModule: createDashboardReportModule(foundation),
 })
 
 const server = app.listen(config.port, () => {

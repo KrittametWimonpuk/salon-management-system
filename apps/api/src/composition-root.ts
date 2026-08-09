@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
-import { BookingPolicy, CommissionPolicy, CustomerPolicy, EmployeePolicy, PaymentPolicy, PolicyEngine,
+import { BookingPolicy, CommissionPolicy, CustomerPolicy, DashboardReportPolicy, EmployeePolicy, PaymentPolicy, PolicyEngine,
   ServicePolicy } from './application/foundation/policy.js'
 import type { AppConfig } from './config/env.js'
 import { DomainEventFactory, InProcessDomainEventDispatcher } from './domain/foundation/domain-events.js'
@@ -29,6 +29,7 @@ export function createApplicationFoundation(database: PrismaClient, config: AppC
       service: new ServicePolicy(),
       payment: new PaymentPolicy(),
       commission: new CommissionPolicy(),
+      dashboardReport: new DashboardReportPolicy(),
     },
     clock,
     ids,

@@ -71,6 +71,7 @@ export interface CommissionPolicyResource extends ScopedResource {
   branchId: string
   ownerId: null
 }
+export type DashboardReportPolicyResource = ScopedResource
 
 export class BookingPolicy extends ScopedResourcePolicy<BookingPolicyResource> {}
 export class CustomerPolicy extends ScopedResourcePolicy<CustomerPolicyResource> {}
@@ -78,3 +79,4 @@ export class EmployeePolicy extends ScopedResourcePolicy<EmployeePolicyResource>
 export class ServicePolicy extends ScopedResourcePolicy<ServicePolicyResource> {}
 export class PaymentPolicy extends ScopedResourcePolicy<PaymentPolicyResource> {}
 export class CommissionPolicy extends ScopedResourcePolicy<CommissionPolicyResource> {}
+export class DashboardReportPolicy extends ScopedResourcePolicy<DashboardReportPolicyResource> {}
