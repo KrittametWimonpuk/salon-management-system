@@ -92,6 +92,18 @@
 3. TD-018 employee historical snapshot
 4. TD-033 legacy commission status contract
 
+### Phase 7 Dashboard And Reports
+
+| ID | Phase | Severity | Debt / Limitation | Current Mitigation | Exit Criteria |
+| --- | --- | --- | --- | --- | --- |
+| TD-037 | 7 | P1 | Dashboard/report permission keys have no versioned seed or onboarding workflow | Operators provision permissions and role grants before enabling endpoints; Policy Engine and middleware fail closed | Idempotent, versioned RBAC bootstrap with integration coverage for every Phase 7 permission |
+| TD-038 | 7 | P2 | Outstanding balance is current ledger state for sales closed in range, not a historical as-of value | API/docs label the metric as current state and financial ledgers remain immutable | Add an approved accounting snapshot/read model with reconciliation tests |
+| TD-039 | 7 | P2 | WorkingHour is not an immutable historical schedule snapshot, so retroactive edits may change utilization | Effective dates, holidays, and approved time off are applied consistently | Introduce effective immutable schedule revisions and backfill verified snapshots |
+| TD-040 | 7 | P2 | CSV/XLSX export is synchronous and memory-backed | Maximum 10,000 bounded facts, 366-day range, and fail-closed truncation | Background job, streaming/object storage, cancellation, expiry, and load tests |
+| TD-041 | 7 | P2 | Dashboard aggregates query transactional tables without a cache, materialized view, or read replica | Fixed projection queries run in parallel with strict row/range limits and no N+1 | Production p95 benchmarks justify and validate an indexed read model or replica |
+| TD-042 | 7 | P3 | Dashboard reads are not persisted to AuditLog to avoid high-volume audit growth | Request logs and in-process `DashboardViewed` events retain operational observability; generated reports/exports are audited | Define retention/cost policy and add sampled or dedicated analytics telemetry if compliance requires it |
+| TD-043 | 7 | P2 | ExcelJS 4.4.0 depends on `uuid` 8.x, which npm audit flags for the buffer form of UUID v3/v5/v6 | The report path uses ExcelJS workbook generation and its UUID v4 call only; CSV remains available; no untrusted UUID buffer is supplied | Upgrade when ExcelJS releases a compatible fixed dependency, or replace the exporter after compatibility and regression testing |
+
 ## Governance
 
 - ทุก debt ที่แก้ต้องมี migration/rollback strategy เมื่อแตะข้อมูลสำคัญ

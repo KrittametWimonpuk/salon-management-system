@@ -185,3 +185,40 @@ Refund adjustment accepts optional `reason`; otherwise the immutable PaymentRefu
 | `INTERNAL_001` | 500 | Sanitized internal failure |
 
 Write endpoints attach an explicit action to the existing audit middleware. Audit persistence occurs after the HTTP response finishes and is not written directly by a use case.
+
+## Dashboard And Reports
+
+All endpoints require an access token. An optional `X-Branch-ID` or `branchId` selects one authorized branch; without either, the result covers the branches granting the required permission, or the organization when an organization-wide grant exists.
+
+Dashboard query parameters support `dateFrom`, `dateTo`, `period`, `timezone`, `branchId`, `employeeId`, `serviceId`, `customerId`, and `granularity`. Report bodies additionally support `keyword`, `status`, `page`, `pageSize`, `sort`, and `order`. Date ranges are half-open after timezone conversion, limited to 366 days, and default to `THIS_MONTH` in `Asia/Bangkok`.
+
+| Method | Endpoint | Permission |
+| --- | --- | --- |
+| GET | `/api/dashboard/overview` | `dashboard.read` |
+| GET | `/api/dashboard/business-health` | `dashboard.read` |
+| GET | `/api/dashboard/trends` | `dashboard.read` |
+| GET | `/api/dashboard/sales` | `sales.summary.read` |
+| GET | `/api/dashboard/sales/trend` | `sales.summary.read` |
+| GET | `/api/dashboard/sales/by-branch` | `sales.summary.read` |
+| GET | `/api/dashboard/sales/by-service` | `sales.summary.read` |
+| GET | `/api/dashboard/sales/by-employee` | `sales.summary.read` |
+| GET | `/api/dashboard/bookings` | `booking.summary.read` |
+| GET | `/api/dashboard/bookings/trend` | `booking.summary.read` |
+| GET | `/api/dashboard/bookings/status-breakdown` | `booking.summary.read` |
+| GET | `/api/dashboard/payments` | `payment.summary.read` |
+| GET | `/api/dashboard/payments/method-breakdown` | `payment.summary.read` |
+| GET | `/api/dashboard/payments/refunds` | `payment.summary.read` |
+| GET | `/api/dashboard/payments/outstanding` | `payment.summary.read` |
+| GET | `/api/dashboard/commissions` | `commission.summary.read` |
+| GET | `/api/dashboard/commissions/by-employee` | `commission.summary.read` |
+| GET | `/api/dashboard/commissions/by-branch` | `commission.summary.read` |
+| GET | `/api/dashboard/commissions/by-period` | `commission.summary.read` |
+| GET | `/api/dashboard/employees/performance` | `employee.performance.read` |
+| GET | `/api/dashboard/services/performance` | `service.performance.read` |
+| GET | `/api/dashboard/customers/analytics` | `customer.analytics.read` |
+| GET | `/api/dashboard/branches/summary` | `branch.summary.read` |
+| GET | `/api/reports` | `report.read` |
+
+Report generation endpoints are `POST /api/reports/{sales|bookings|payments|commissions|customers|branches}`, plus `/api/reports/employees/performance` and `/api/reports/services/performance`. They require `report.read` and the corresponding domain permission. Add `/export` to those paths for export; export requires `report.export` and the corresponding domain permission.
+
+Export bodies set `format` to `csv` or `xlsx`, with optional `columns`, `includeSummary`, and `title`. CSV is UTF-8 with BOM. Export responses are attachments and sanitize spreadsheet formulas. Financial values are integer cents. See `docs/DASHBOARD_REPORTS.md` for formulas and limits.

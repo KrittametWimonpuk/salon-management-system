@@ -57,6 +57,7 @@ import type {
 import { NotFoundError } from '../../domain/foundation/domain-errors.js'
 import { failure, success, type Result } from '../../domain/foundation/result.js'
 import { PrismaCommissionRepository } from './prisma-commission-repository.js'
+import { PrismaDashboardReportRepository } from './prisma-dashboard-report-repository.js'
 
 export type PrismaDatabase = PrismaClient | Prisma.TransactionClient
 
@@ -1291,5 +1292,6 @@ export function createPrismaRepositories(database: PrismaDatabase): RepositorySe
     services: new PrismaServiceRepository(database),
     payments: new PrismaPaymentRepository(database),
     commissions: new PrismaCommissionRepository(database),
+    dashboardReports: new PrismaDashboardReportRepository(database),
   }
 }

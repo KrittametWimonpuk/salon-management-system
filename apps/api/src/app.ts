@@ -21,6 +21,8 @@ import { createBookingPaymentRouter, createPaymentRouter } from './modules/pos-p
 import type { CommissionModule } from './modules/commission/commission.module.js'
 import { createBookingCommissionRouter, createCommissionRouter,
   createEmployeeCommissionRouter } from './modules/commission/commission.routes.js'
+import type { DashboardReportModule } from './modules/dashboard-report/dashboard-report.module.js'
+import { createDashboardRouter, createReportRouter } from './modules/dashboard-report/dashboard-report.routes.js'
 import type { AuditSink } from './shared/audit/audit.js'
 import { ErrorCode } from './shared/errors/error-codes.js'
 import { sendError, sendSuccess } from './shared/http/response.js'
@@ -39,11 +41,12 @@ export interface AppDependencies {
   bookingModule?: BookingModule
   paymentModule?: PaymentModule
   commissionModule?: CommissionModule
+  dashboardReportModule?: DashboardReportModule
 }
 
 export function createApp(dependencies: AppDependencies): Express {
   const { config, authService, tenantService, auditSink, customerModule, employeeModule, serviceCatalogModule,
-    bookingModule, paymentModule, commissionModule } = dependencies
+    bookingModule, paymentModule, commissionModule, dashboardReportModule } = dependencies
   const app = express()
   app.disable('x-powered-by')
   app.set('trust proxy', config.trustProxy)
@@ -107,6 +110,10 @@ export function createApp(dependencies: AppDependencies): Express {
     app.use('/api/commissions', createCommissionRouter(commissionModule, authService, tenantService))
     app.use('/api/bookings', createBookingCommissionRouter(commissionModule, authService, tenantService))
     app.use('/api/employees', createEmployeeCommissionRouter(commissionModule, authService, tenantService))
+  }
+  if (dashboardReportModule) {
+    app.use('/api/dashboard', createDashboardRouter(dashboardReportModule, authService, tenantService))
+    app.use('/api/reports', createReportRouter(dashboardReportModule, authService, tenantService))
   }
 
   app.use(notFoundHandler)

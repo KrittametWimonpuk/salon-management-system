@@ -1,5 +1,6 @@
 import type { NotFoundError } from '../../domain/foundation/domain-errors.js'
 import type { Result } from '../../domain/foundation/result.js'
+import type { DashboardReportRepository } from './dashboard-report-repository.js'
 import type { PageResult, SortDirectionValue } from './query.js'
 
 export type EmployeeStatusValue = 'ACTIVE' | 'INACTIVE' | 'TERMINATED'
@@ -915,4 +916,5 @@ export interface RepositorySet {
   services: ServiceRepository
   payments: PaymentRepository
   commissions: CommissionRepository
+  dashboardReports: DashboardReportRepository
 }

@@ -89,3 +89,21 @@ All Booking operations require a resolved branch. Permission middleware checks t
 All POS and Payment routes require a resolved branch. `PaymentPolicy` repeats the permission, organization, and branch decision inside every use case; repository predicates independently scope Booking, Payment, and PaymentRefund reads/writes. `pos.manage` is reserved for explicit financial-status reconciliation, while `payment.close_sale` controls close-sale state.
 
 All Commission routes require a resolved branch. Route middleware and `CommissionPolicy` both enforce the operation permission, while `CommissionRepository` independently scopes every history, adjustment, approval, period, rule, refund, and summary query. Lock does not imply permission bypass and Owner has no special exemption. Commission permission provisioning remains an operational requirement.
+
+## Dashboard And Report Permissions
+
+- `dashboard.read`
+- `report.read`
+- `report.export`
+- `sales.summary.read`
+- `booking.summary.read`
+- `payment.summary.read`
+- `commission.summary.read`
+- `employee.performance.read`
+- `service.performance.read`
+- `customer.analytics.read`
+- `branch.summary.read`
+
+Routes enforce permission middleware and use cases independently enforce `DashboardReportPolicy`. Report generation requires `report.read` plus the report's domain permission. Export requires `report.export` plus the domain permission.
+
+An explicit branch header/filter must be authorized for the required permission. Without one, branch-scoped grants are unioned only across branches containing that permission; an organization-wide grant permits all active organization branches. Every Prisma report predicate retains the organization and resolved branch scope. Provisioning these permission keys remains an operational requirement until an idempotent RBAC bootstrap is added.

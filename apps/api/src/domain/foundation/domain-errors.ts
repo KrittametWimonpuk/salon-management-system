@@ -78,3 +78,7 @@ export class CommissionAdjustmentInvalidError extends BusinessRuleViolationError
 export class CommissionDuplicateError extends ConflictError {}
 export class CommissionFinancialIntegrityError extends BusinessRuleViolationError {}
 export class CommissionApprovalInvalidError extends BusinessRuleViolationError {}
+export class ReportDateRangeInvalidError extends ValidationError {}
+export class ReportDateRangeTooLargeError extends BusinessRuleViolationError {}
+export class ReportRowLimitExceededError extends BusinessRuleViolationError {}
+export class ReportDataIntegrityError extends BusinessRuleViolationError {}
