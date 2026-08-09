@@ -1,0 +1,146 @@
+/* สไตล์เรียบ ๆ ให้แอปดูสะอาดตา — ปรับแต่งได้ตามใจ */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", "Sarabun", Tahoma, sans-serif;
+  background: #f4f5f7;
+  color: #1f2933;
+}
+
+.container {
+  max-width: 480px;
+  margin: 48px auto;
+  padding: 0 16px;
+}
+
+.container.wide {
+  max-width: 1040px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+h1 { font-size: 22px; margin-top: 0; }
+
+label { display: block; font-size: 14px; margin: 12px 0 4px; font-weight: 600; }
+
+input[type="text"], input[type="email"], input[type="password"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d2d6dc;
+  border-radius: 8px;
+  font-size: 15px;
+}
+input.invalid { border-color: #dc2626; }
+input:disabled, select:disabled, button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  background: #2563eb;
+  color: #fff;
+}
+button:hover { background: #1d4ed8; }
+button.secondary { background: #e5e7eb; color: #1f2933; }
+button.danger { background: transparent; color: #dc2626; padding: 4px 8px; }
+button.danger-solid { background: #dc2626; color: #fff; }
+button.danger-solid:hover { background: #b91c1c; }
+
+.row { display: flex; gap: 8px; align-items: center; }
+.row.end { justify-content: flex-end; }
+.row .grow { flex: 1; }
+.between { display: flex; justify-content: space-between; align-items: center; }
+.mt { margin-top: 16px; }
+.muted { color: #6b7280; font-size: 14px; }
+.error { color: #dc2626; font-size: 14px; margin-top: 8px; }
+.field-error { color: #dc2626; font-size: 13px; margin: 4px 0 0; }
+.link { background: none; color: #2563eb; padding: 0; font-weight: 400; }
+
+select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d2d6dc;
+  border-radius: 8px;
+  font-size: 15px;
+  background: #fff;
+  font-family: inherit;
+}
+textarea.invalid { border-color: #dc2626; }
+
+/* ---- ตารางรายการครุภัณฑ์ ---- */
+.table-wrap { overflow-x: auto; transition: opacity 0.15s; }
+.table-wrap.is-refreshing { opacity: 0.5; pointer-events: none; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #eef0f2; white-space: nowrap; }
+th { color: #6b7280; font-weight: 600; font-size: 13px; }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: #1f2933; }
+.sort-arrow { color: #2563eb; }
+
+/* ---- toolbar: กล่องค้นหา + ปุ่มเพิ่ม ---- */
+.toolbar { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.search-input { max-width: 360px; }
+
+/* ---- empty state ---- */
+.empty-state {
+  text-align: center;
+  padding: 48px 16px;
+  border: 1px dashed #d2d6dc;
+  border-radius: 12px;
+}
+.empty-state h3 { margin: 0 0 6px; font-size: 17px; }
+.empty-state button { margin-top: 16px; }
+
+/* ---- สรุปรายการที่กำลังจะลบ ในกล่องยืนยัน ---- */
+.delete-summary {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.delete-summary-tag { font-weight: 700; font-size: 15px; }
+.delete-summary-name { color: #4b5563; font-size: 14px; margin-top: 2px; }
+
+/* ---- badge สถานะครุภัณฑ์ ---- */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.badge-available { background: #dcfce7; color: #15803d; }
+.badge-in_use { background: #dbeafe; color: #1d4ed8; }
+.badge-repair { background: #fef3c7; color: #b45309; }
+.badge-disposed { background: #f3f4f6; color: #6b7280; }
+
+/* ---- overlay + modal สำหรับฟอร์ม/ยืนยันการลบ ---- */
+.overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; z-index: 50;
+}
+.modal { max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; }
+
+/* ---- แท็บสลับหน้า (ครุภัณฑ์ / master data ต่าง ๆ) ---- */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid #eef0f2; flex-wrap: wrap; }
+.tab {
+  background: none; color: #6b7280; font-weight: 600; font-size: 14px;
+  padding: 10px 14px; border-radius: 8px 8px 0 0; border-bottom: 2px solid transparent;
+}
+.tab:hover { background: #f9fafb; color: #1f2933; }
+.tab.active { color: #2563eb; border-bottom: 2px solid #2563eb; }
+.section-title { font-size: 17px; margin: 0; }
+
+/* ---- checkbox แถวเดียว (เช่น "เปิดใช้งาน" ในฟอร์ม master data) ---- */
+.checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; margin: 16px 0 4px; }
+.checkbox-row input { width: auto; }
+
+/* ---- dropdown ที่ยังไม่มีตัวเลือก (master data ว่าง) ---- */
+.empty-dropdown {
+  border: 1px dashed #d2d6dc; border-radius: 8px;
+  padding: 10px 12px; text-align: center;
+}
+.empty-dropdown p { margin: 0 0 4px; }

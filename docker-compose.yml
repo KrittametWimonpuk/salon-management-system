@@ -1,0 +1,60 @@
+# ---------------------------------------------------------------------------
+# docker-compose สำหรับรัน "ทั้งระบบ" บนเครื่องตัวเองด้วยคำสั่งเดียว
+#
+#   docker compose up --build
+#
+# แล้วเปิดเบราว์เซอร์ที่ http://localhost:8080
+#
+# ประกอบด้วย 3 service:
+#   db  = ฐานข้อมูล PostgreSQL
+#   api = Backend (Express) — จะรัน migration ให้อัตโนมัติตอนสตาร์ท
+#   web = Frontend (React ที่ build แล้ว เสิร์ฟด้วย nginx)
+# ---------------------------------------------------------------------------
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: appdb
+    ports:
+      - "5432:5432"          # เปิดพอร์ตให้ต่อจากเครื่องได้ (เช่นใช้ DBeaver)
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:             # ให้ api รอจน db พร้อมก่อน
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./apps/api
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/appdb?schema=public"
+      JWT_ACCESS_SECRET: "${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}"
+      JWT_REFRESH_SECRET: "${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}"
+      JWT_ISSUER: "${JWT_ISSUER:-salon-api}"
+      JWT_AUDIENCE: "${JWT_AUDIENCE:-salon-web}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:8080}"
+      COOKIE_SECURE: "${COOKIE_SECURE:-false}"
+      COOKIE_SAME_SITE: "${COOKIE_SAME_SITE:-strict}"
+      TRUST_PROXY: "1"
+      PORT: "4000"
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./apps/web
+    environment:
+      # ให้ nginx รู้ว่าจะ proxy /api ไปที่ service ไหน (ดู apps/web/nginx.conf)
+      API_UPSTREAM: "api:4000"
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  db-data:

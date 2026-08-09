@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+apps/web/dist/
+
+# env & secrets  — ห้าม commit ไฟล์เหล่านี้เด็ดขาด
+.env
+.env.local
+deploy/config.sh
+deploy/.state.sh
+
+# logs
+*.log
+npm-debug.log*
+
+# os
+.DS_Store
+Thumbs.db

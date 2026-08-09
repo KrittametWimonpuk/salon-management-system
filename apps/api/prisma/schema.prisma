@@ -1,0 +1,944 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum BookingItemStatus {
+  SCHEDULED
+  IN_SERVICE
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingSource {
+  WALK_IN
+  WEBSITE
+  LINE
+  FACEBOOK
+  PHONE
+}
+
+enum PaymentMethod {
+  CASH
+  QR
+  CARD
+  BANK_TRANSFER
+  E_WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIAL
+  REFUNDED
+  VOID
+}
+
+enum CommissionType {
+  PERCENT
+  FIXED
+  TIER
+  MIXED
+}
+
+enum CommissionBasis {
+  SERVICE_PRICE
+  PAID_AMOUNT
+}
+
+enum CommissionStatus {
+  PENDING
+  APPROVED
+  PAID
+  VOIDED
+}
+
+enum CommissionAdjustmentType {
+  RECALCULATION
+  REFUND
+}
+
+enum CommissionPeriodStatus {
+  OPEN
+  APPROVED
+  LOCKED
+}
+
+enum TimeOffStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum SettingValueType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+}
+
+enum TaxType {
+  NONE
+  VAT
+}
+
+enum TaxMode {
+  INCLUDED
+  EXCLUDED
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+model Organization {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  name                  String                 @db.VarChar(160)
+  legalName             String?                @db.VarChar(200)
+  timezone              String                 @db.VarChar(64)
+  currency              String                 @db.VarChar(3)
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @db.Timestamptz(3)
+  deletedAt             DateTime?              @db.Timestamptz(3)
+  branches              Branch[]
+  users                 User[]
+  roles                 Role[]
+  employees             Employee[]
+  customers             Customer[]
+  services              Service[]
+  serviceCategories     ServiceCategory[]
+  customerTags          CustomerTag[]
+  skills                Skill[]
+  promotions            Promotion[]
+  commissionRules       CommissionRule[]
+  commissionPeriods     CommissionPeriod[]
+  commissionAdjustments CommissionAdjustment[]
+  commissionApprovals   CommissionApproval[]
+  settings              Setting[]
+  auditLogs             AuditLog[]
+
+  @@index([deletedAt])
+}
+
+model Branch {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  organizationId        String                 @db.Uuid
+  code                  String                 @db.VarChar(32)
+  name                  String                 @db.VarChar(160)
+  phone                 String?                @db.VarChar(32)
+  email                 String?                @db.VarChar(320)
+  addressLine1          String?                @db.VarChar(200)
+  addressLine2          String?                @db.VarChar(200)
+  district              String?                @db.VarChar(120)
+  province              String?                @db.VarChar(120)
+  postalCode            String?                @db.VarChar(20)
+  countryCode           String                 @db.Char(2)
+  timezone              String?                @db.VarChar(64)
+  isActive              Boolean                @default(true)
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @db.Timestamptz(3)
+  deletedAt             DateTime?              @db.Timestamptz(3)
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  employeeBranches      EmployeeBranch[]
+  branchServices        BranchService[]
+  bookings              Booking[]
+  holidays              Holiday[]
+  employeeTimeOffs      EmployeeTimeOff[]
+  userRoles             UserRole[]
+  commissionRules       CommissionRule[]
+  commissionPeriods     CommissionPeriod[]
+  commissionAdjustments CommissionAdjustment[]
+  commissionApprovals   CommissionApproval[]
+  promotions            Promotion[]
+  settings              Setting[]
+  preferredCustomers    Customer[]             @relation("PreferredBranch")
+
+  @@index([organizationId, isActive, deletedAt])
+}
+
+model User {
+  id                           String                 @id @default(uuid()) @db.Uuid
+  organizationId               String                 @db.Uuid
+  email                        String                 @db.VarChar(320)
+  passwordHash                 String                 @db.VarChar(255)
+  displayName                  String?                @db.VarChar(160)
+  status                       UserStatus             @default(ACTIVE)
+  lastLoginAt                  DateTime?              @db.Timestamptz(3)
+  createdAt                    DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt                    DateTime               @updatedAt @db.Timestamptz(3)
+  deletedAt                    DateTime?              @db.Timestamptz(3)
+  organization                 Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  employee                     Employee?
+  roleAssignments              UserRole[]
+  bookingsCreated              Booking[]              @relation("BookingCreatedBy")
+  bookingsClosed               Booking[]              @relation("BookingClosedBy")
+  paymentsReceived             Payment[]              @relation("PaymentReceivedBy")
+  refundsProcessed             PaymentRefund[]        @relation("PaymentRefundedBy")
+  timeOffReviews               EmployeeTimeOff[]      @relation("TimeOffReviewedBy")
+  auditLogs                    AuditLog[]
+  authSessions                 AuthSession[]
+  commissionAdjustmentsCreated CommissionAdjustment[] @relation("CommissionAdjustmentCreatedBy")
+  commissionApprovalsCreated   CommissionApproval[]   @relation("CommissionApprovalCreatedBy")
+  commissionPeriodsApproved    CommissionPeriod[]     @relation("CommissionPeriodApprovedBy")
+  commissionPeriodsLocked      CommissionPeriod[]     @relation("CommissionPeriodLockedBy")
+
+  @@index([organizationId, status, deletedAt])
+  @@index([organizationId, email])
+}
+
+model AuthSession {
+  id                 String       @id @default(uuid()) @db.Uuid
+  userId             String       @db.Uuid
+  tokenFamilyId      String       @db.Uuid
+  refreshTokenHash   String       @unique @db.Char(64)
+  expiresAt          DateTime     @db.Timestamptz(3)
+  lastUsedAt         DateTime?    @db.Timestamptz(3)
+  revokedAt          DateTime?    @db.Timestamptz(3)
+  revocationReason   String?      @db.VarChar(80)
+  rotatedToSessionId String?      @unique @db.Uuid
+  createdAt          DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime     @updatedAt @db.Timestamptz(3)
+  user               User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  rotatedTo          AuthSession? @relation("AuthSessionRotation", fields: [rotatedToSessionId], references: [id], onDelete: SetNull)
+  rotatedFrom        AuthSession? @relation("AuthSessionRotation")
+
+  @@index([userId, revokedAt, expiresAt])
+  @@index([tokenFamilyId, revokedAt])
+}
+
+model Role {
+  id              String           @id @default(uuid()) @db.Uuid
+  organizationId  String           @db.Uuid
+  name            String           @db.VarChar(80)
+  description     String?          @db.VarChar(500)
+  isSystem        Boolean          @default(false)
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(3)
+  deletedAt       DateTime?        @db.Timestamptz(3)
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  rolePermissions RolePermission[]
+  userAssignments UserRole[]
+
+  @@index([organizationId, isActive, deletedAt])
+}
+
+model Permission {
+  id              String           @id @default(uuid()) @db.Uuid
+  key             String           @db.VarChar(120)
+  description     String?          @db.VarChar(500)
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(3)
+  deletedAt       DateTime?        @db.Timestamptz(3)
+  rolePermissions RolePermission[]
+
+  @@index([isActive, deletedAt])
+}
+
+model RolePermission {
+  id           String     @id @default(uuid()) @db.Uuid
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  createdAt    DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime   @updatedAt @db.Timestamptz(3)
+  deletedAt    DateTime?  @db.Timestamptz(3)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict)
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+  @@index([deletedAt])
+}
+
+model UserRole {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  roleId    String    @db.Uuid
+  branchId  String?   @db.Uuid
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  role      Role      @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  branch    Branch?   @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+  @@index([userId, deletedAt])
+  @@index([roleId])
+  @@index([branchId])
+}
+
+model Employee {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  organizationId        String                 @db.Uuid
+  userId                String?                @unique @db.Uuid
+  employeeCode          String                 @db.VarChar(40)
+  displayName           String                 @db.VarChar(160)
+  firstName             String?                @db.VarChar(100)
+  lastName              String?                @db.VarChar(100)
+  phone                 String?                @db.VarChar(32)
+  email                 String?                @db.VarChar(320)
+  hireDate              DateTime?              @db.Date
+  status                EmployeeStatus         @default(ACTIVE)
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @db.Timestamptz(3)
+  deletedAt             DateTime?              @db.Timestamptz(3)
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user                  User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  branchAssignments     EmployeeBranch[]
+  bookingItems          BookingItem[]
+  commissionRules       CommissionRule[]
+  commissionHistory     CommissionHistory[]
+  commissionAdjustments CommissionAdjustment[]
+  timeOffs              EmployeeTimeOff[]
+  skills                EmployeeSkill[]
+
+  @@index([organizationId, status, deletedAt])
+  @@index([organizationId, employeeCode])
+  @@index([organizationId, email])
+}
+
+model EmployeeBranch {
+  id           String        @id @default(uuid()) @db.Uuid
+  employeeId   String        @db.Uuid
+  branchId     String        @db.Uuid
+  isPrimary    Boolean       @default(false)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime      @updatedAt @db.Timestamptz(3)
+  deletedAt    DateTime?     @db.Timestamptz(3)
+  employee     Employee      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  workingHours WorkingHour[]
+
+  @@unique([employeeId, branchId])
+  @@index([branchId, isActive, deletedAt])
+  @@index([employeeId, isActive, deletedAt])
+}
+
+model Customer {
+  id                String                  @id @default(uuid()) @db.Uuid
+  organizationId    String                  @db.Uuid
+  preferredBranchId String?                 @db.Uuid
+  customerNumber    String                  @db.VarChar(40)
+  firstName         String                  @db.VarChar(100)
+  lastName          String?                 @db.VarChar(100)
+  phone             String?                 @db.VarChar(32)
+  email             String?                 @db.VarChar(320)
+  dateOfBirth       DateTime?               @db.Date
+  notes             String?
+  lastVisitAt       DateTime?               @db.Timestamptz(3)
+  createdAt         DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime                @updatedAt @db.Timestamptz(3)
+  deletedAt         DateTime?               @db.Timestamptz(3)
+  organization      Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  preferredBranch   Branch?                 @relation("PreferredBranch", fields: [preferredBranchId], references: [id], onDelete: SetNull)
+  bookings          Booking[]
+  tags              CustomerTagAssignment[]
+
+  @@index([organizationId, customerNumber])
+  @@index([organizationId, phone, deletedAt])
+  @@index([organizationId, email, deletedAt])
+  @@index([preferredBranchId])
+}
+
+model CustomerTag {
+  id             String                  @id @default(uuid()) @db.Uuid
+  organizationId String                  @db.Uuid
+  name           String                  @db.VarChar(80)
+  description    String?                 @db.VarChar(500)
+  color          String?                 @db.VarChar(7)
+  isActive       Boolean                 @default(true)
+  createdAt      DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime                @updatedAt @db.Timestamptz(3)
+  deletedAt      DateTime?               @db.Timestamptz(3)
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  customers      CustomerTagAssignment[]
+
+  @@index([organizationId, isActive, deletedAt])
+}
+
+model CustomerTagAssignment {
+  id         String      @id @default(uuid()) @db.Uuid
+  customerId String      @db.Uuid
+  tagId      String      @db.Uuid
+  createdAt  DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime    @updatedAt @db.Timestamptz(3)
+  deletedAt  DateTime?   @db.Timestamptz(3)
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  tag        CustomerTag @relation(fields: [tagId], references: [id], onDelete: Restrict)
+
+  @@unique([customerId, tagId])
+  @@index([tagId, deletedAt])
+  @@index([customerId, deletedAt])
+}
+
+model ServiceCategory {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  name           String       @db.VarChar(100)
+  description    String?      @db.VarChar(500)
+  displayOrder   Int          @default(0)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
+  deletedAt      DateTime?    @db.Timestamptz(3)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  services       Service[]
+
+  @@index([organizationId, displayOrder, isActive, deletedAt])
+}
+
+model Service {
+  id                  String           @id @default(uuid()) @db.Uuid
+  organizationId      String           @db.Uuid
+  categoryId          String           @db.Uuid
+  code                String           @db.VarChar(40)
+  name                String           @db.VarChar(160)
+  description         String?
+  durationMinutes     Int
+  bufferBeforeMinutes Int              @default(0)
+  bufferAfterMinutes  Int              @default(0)
+  price               Decimal          @db.Decimal(12, 2)
+  taxType             TaxType
+  taxMode             TaxMode
+  taxRate             Decimal          @db.Decimal(5, 2)
+  isActive            Boolean          @default(true)
+  createdAt           DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime         @updatedAt @db.Timestamptz(3)
+  deletedAt           DateTime?        @db.Timestamptz(3)
+  organization        Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  category            ServiceCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  branchServices      BranchService[]
+  bookingItems        BookingItem[]
+  commissionRules     CommissionRule[]
+  requiredSkills      ServiceSkill[]
+
+  @@index([organizationId, isActive, deletedAt])
+  @@index([organizationId, code])
+  @@index([organizationId, name])
+  @@index([categoryId, isActive, deletedAt])
+}
+
+model Skill {
+  id             String          @id @default(uuid()) @db.Uuid
+  organizationId String          @db.Uuid
+  name           String          @db.VarChar(100)
+  description    String?         @db.VarChar(500)
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
+  deletedAt      DateTime?       @db.Timestamptz(3)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  employees      EmployeeSkill[]
+  services       ServiceSkill[]
+
+  @@index([organizationId, isActive, deletedAt])
+}
+
+model EmployeeSkill {
+  id               String    @id @default(uuid()) @db.Uuid
+  employeeId       String    @db.Uuid
+  skillId          String    @db.Uuid
+  proficiencyLevel Int?
+  certifiedAt      DateTime? @db.Date
+  expiresAt        DateTime? @db.Date
+  notes            String?   @db.VarChar(500)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt        DateTime? @db.Timestamptz(3)
+  employee         Employee  @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  skill            Skill     @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@unique([employeeId, skillId])
+  @@index([skillId, deletedAt])
+  @@index([employeeId, deletedAt])
+}
+
+model ServiceSkill {
+  id            String   @id @default(uuid()) @db.Uuid
+  serviceId     String   @db.Uuid
+  skillId       String   @db.Uuid
+  requiredLevel Int?
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+  service       Service  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  skill         Skill    @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@unique([serviceId, skillId])
+  @@index([skillId])
+}
+
+model BranchService {
+  id                      String    @id @default(uuid()) @db.Uuid
+  branchId                String    @db.Uuid
+  serviceId               String    @db.Uuid
+  priceOverride           Decimal?  @db.Decimal(12, 2)
+  durationOverrideMinutes Int?
+  isActive                Boolean   @default(true)
+  createdAt               DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt               DateTime? @db.Timestamptz(3)
+  branch                  Branch    @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  service                 Service   @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([branchId, serviceId])
+  @@index([serviceId, isActive, deletedAt])
+}
+
+model Booking {
+  id                 String            @id @default(uuid()) @db.Uuid
+  branchId           String            @db.Uuid
+  customerId         String            @db.Uuid
+  createdByUserId    String?           @db.Uuid
+  bookingNumber      String            @db.VarChar(40)
+  status             BookingStatus     @default(PENDING)
+  source             BookingSource
+  startsAt           DateTime          @db.Timestamptz(3)
+  endsAt             DateTime          @db.Timestamptz(3)
+  customerNotes      String?
+  internalNotes      String?
+  cancellationReason String?           @db.VarChar(500)
+  cancelledAt        DateTime?         @db.Timestamptz(3)
+  completedAt        DateTime?         @db.Timestamptz(3)
+  paymentStatus      PaymentStatus     @default(PENDING)
+  saleClosedAt       DateTime?         @db.Timestamptz(3)
+  closedByUserId     String?           @db.Uuid
+  createdAt          DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime          @updatedAt @db.Timestamptz(3)
+  deletedAt          DateTime?         @db.Timestamptz(3)
+  branch             Branch            @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  customer           Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  createdBy          User?             @relation("BookingCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  closedBy           User?             @relation("BookingClosedBy", fields: [closedByUserId], references: [id], onDelete: SetNull)
+  items              BookingItem[]
+  payments           Payment[]
+  discounts          BookingDiscount[]
+
+  @@unique([branchId, bookingNumber])
+  @@index([branchId, startsAt, status, deletedAt])
+  @@index([customerId, startsAt])
+  @@index([createdByUserId])
+  @@index([branchId, paymentStatus, saleClosedAt])
+  @@index([closedByUserId])
+}
+
+model BookingItem {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  bookingId             String                 @db.Uuid
+  serviceId             String                 @db.Uuid
+  employeeId            String                 @db.Uuid
+  serviceName           String                 @db.VarChar(160)
+  status                BookingItemStatus      @default(SCHEDULED)
+  startsAt              DateTime               @db.Timestamptz(3)
+  endsAt                DateTime               @db.Timestamptz(3)
+  durationMinutes       Int
+  quantity              Int                    @default(1)
+  unitPrice             Decimal                @db.Decimal(12, 2)
+  discountAmount        Decimal                @default(0) @db.Decimal(12, 2)
+  subtotalAmount        Decimal                @db.Decimal(12, 2)
+  taxType               TaxType
+  taxMode               TaxMode
+  taxRate               Decimal                @db.Decimal(5, 2)
+  taxAmount             Decimal                @db.Decimal(12, 2)
+  totalAmount           Decimal                @db.Decimal(12, 2)
+  notes                 String?
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @db.Timestamptz(3)
+  booking               Booking                @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  service               Service                @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  employee              Employee               @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  commissionHistory     CommissionHistory?
+  commissionAdjustments CommissionAdjustment[]
+
+  @@index([bookingId, status])
+  @@index([employeeId, startsAt, endsAt])
+  @@index([serviceId])
+}
+
+model Promotion {
+  id               String            @id @default(uuid()) @db.Uuid
+  organizationId   String            @db.Uuid
+  branchId         String?           @db.Uuid
+  code             String            @db.VarChar(40)
+  name             String            @db.VarChar(160)
+  description      String?
+  discountType     DiscountType
+  discountValue    Decimal           @db.Decimal(12, 2)
+  minimumSpend     Decimal?          @db.Decimal(12, 2)
+  maximumDiscount  Decimal?          @db.Decimal(12, 2)
+  startsAt         DateTime          @db.Timestamptz(3)
+  endsAt           DateTime?         @db.Timestamptz(3)
+  usageLimit       Int?
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
+  deletedAt        DateTime?         @db.Timestamptz(3)
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch           Branch?           @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  bookingDiscounts BookingDiscount[]
+
+  @@index([organizationId, code, isActive, startsAt, endsAt, deletedAt])
+  @@index([branchId, isActive, startsAt, endsAt])
+}
+
+model BookingDiscount {
+  id             String       @id @default(uuid()) @db.Uuid
+  bookingId      String       @db.Uuid
+  promotionId    String?      @db.Uuid
+  promotionCode  String?      @db.VarChar(40)
+  description    String       @db.VarChar(160)
+  discountType   DiscountType
+  discountValue  Decimal      @db.Decimal(12, 2)
+  discountAmount Decimal      @db.Decimal(12, 2)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
+  booking        Booking      @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  promotion      Promotion?   @relation(fields: [promotionId], references: [id], onDelete: Restrict)
+
+  @@index([bookingId])
+  @@index([promotionId])
+}
+
+model Payment {
+  id                String              @id @default(uuid()) @db.Uuid
+  bookingId         String              @db.Uuid
+  receivedByUserId  String?             @db.Uuid
+  amount            Decimal             @db.Decimal(12, 2)
+  currency          String              @db.VarChar(3)
+  method            PaymentMethod
+  status            PaymentStatus       @default(PENDING)
+  externalReference String?             @db.VarChar(255)
+  idempotencyKey    String?             @unique @db.VarChar(128)
+  paidAt            DateTime?           @db.Timestamptz(3)
+  refundedAt        DateTime?           @db.Timestamptz(3)
+  voidedAt          DateTime?           @db.Timestamptz(3)
+  voidReason        String?             @db.VarChar(500)
+  notes             String?
+  createdAt         DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime            @updatedAt @db.Timestamptz(3)
+  booking           Booking             @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  receivedBy        User?               @relation("PaymentReceivedBy", fields: [receivedByUserId], references: [id], onDelete: SetNull)
+  commissionHistory CommissionHistory[]
+  refunds           PaymentRefund[]
+
+  @@index([bookingId, status])
+  @@index([status, paidAt])
+  @@index([receivedByUserId])
+  @@index([externalReference])
+}
+
+model PaymentRefund {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  paymentId             String                 @db.Uuid
+  refundedByUserId      String?                @db.Uuid
+  amount                Decimal                @db.Decimal(12, 2)
+  currency              String                 @db.VarChar(3)
+  reason                String                 @db.VarChar(500)
+  externalReference     String?                @db.VarChar(255)
+  notes                 String?
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @db.Timestamptz(3)
+  payment               Payment                @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  refundedBy            User?                  @relation("PaymentRefundedBy", fields: [refundedByUserId], references: [id], onDelete: SetNull)
+  commissionAdjustments CommissionAdjustment[]
+
+  @@index([paymentId, createdAt])
+  @@index([refundedByUserId])
+}
+
+model CommissionTier {
+  id               String         @id @default(uuid()) @db.Uuid
+  commissionRuleId String         @db.Uuid
+  minimumAmount    Decimal        @db.Decimal(12, 2)
+  maximumAmount    Decimal?       @db.Decimal(12, 2)
+  percentageRate   Decimal?       @db.Decimal(5, 2)
+  fixedAmount      Decimal?       @db.Decimal(12, 2)
+  createdAt        DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @db.Timestamptz(3)
+  deletedAt        DateTime?      @db.Timestamptz(3)
+  commissionRule   CommissionRule @relation(fields: [commissionRuleId], references: [id], onDelete: Restrict)
+
+  @@unique([commissionRuleId, minimumAmount])
+  @@index([commissionRuleId, minimumAmount, maximumAmount, deletedAt])
+}
+
+model CommissionRule {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  organizationId        String                 @db.Uuid
+  branchId              String?                @db.Uuid
+  employeeId            String?                @db.Uuid
+  serviceId             String?                @db.Uuid
+  name                  String                 @db.VarChar(160)
+  type                  CommissionType
+  basis                 CommissionBasis        @default(SERVICE_PRICE)
+  percentageRate        Decimal?               @db.Decimal(5, 2)
+  fixedAmount           Decimal?               @db.Decimal(12, 2)
+  priority              Int                    @default(0)
+  effectiveFrom         DateTime               @db.Date
+  effectiveTo           DateTime?              @db.Date
+  isActive              Boolean                @default(true)
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @db.Timestamptz(3)
+  deletedAt             DateTime?              @db.Timestamptz(3)
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch                Branch?                @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  employee              Employee?              @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  service               Service?               @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  commissionHistory     CommissionHistory[]
+  tiers                 CommissionTier[]
+  commissionAdjustments CommissionAdjustment[]
+
+  @@index([organizationId, isActive, effectiveFrom, effectiveTo])
+  @@index([branchId, employeeId, serviceId, priority])
+  @@index([deletedAt])
+}
+
+model CommissionHistory {
+  id               String                 @id @default(uuid()) @db.Uuid
+  bookingItemId    String                 @unique @db.Uuid
+  employeeId       String                 @db.Uuid
+  commissionRuleId String                 @db.Uuid
+  paymentId        String?                @db.Uuid
+  ruleName         String                 @db.VarChar(160)
+  type             CommissionType
+  basis            CommissionBasis
+  baseAmount       Decimal                @db.Decimal(12, 2)
+  percentageRate   Decimal?               @db.Decimal(5, 2)
+  fixedAmount      Decimal?               @db.Decimal(12, 2)
+  commissionAmount Decimal                @db.Decimal(12, 2)
+  status           CommissionStatus       @default(PENDING)
+  calculatedAt     DateTime               @default(now()) @db.Timestamptz(3)
+  approvedAt       DateTime?              @db.Timestamptz(3)
+  paidAt           DateTime?              @db.Timestamptz(3)
+  createdAt        DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime               @updatedAt @db.Timestamptz(3)
+  bookingItem      BookingItem            @relation(fields: [bookingItemId], references: [id], onDelete: Restrict)
+  employee         Employee               @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  commissionRule   CommissionRule         @relation(fields: [commissionRuleId], references: [id], onDelete: Restrict)
+  payment          Payment?               @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  adjustments      CommissionAdjustment[]
+  approvals        CommissionApproval[]
+
+  @@index([employeeId, status, calculatedAt])
+  @@index([commissionRuleId])
+  @@index([paymentId])
+}
+
+model CommissionPeriod {
+  id               String                 @id @default(uuid()) @db.Uuid
+  organizationId   String                 @db.Uuid
+  branchId         String                 @db.Uuid
+  startsAt         DateTime               @db.Timestamptz(3)
+  endsAt           DateTime               @db.Timestamptz(3)
+  status           CommissionPeriodStatus @default(OPEN)
+  approvedByUserId String?                @db.Uuid
+  approvedAt       DateTime?              @db.Timestamptz(3)
+  approvalReason   String?                @db.VarChar(500)
+  lockedByUserId   String?                @db.Uuid
+  lockedAt         DateTime?              @db.Timestamptz(3)
+  lockReason       String?                @db.VarChar(500)
+  createdAt        DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime               @updatedAt @db.Timestamptz(3)
+  organization     Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch           Branch                 @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  approvedBy       User?                  @relation("CommissionPeriodApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  lockedBy         User?                  @relation("CommissionPeriodLockedBy", fields: [lockedByUserId], references: [id], onDelete: SetNull)
+  adjustments      CommissionAdjustment[]
+  approvals        CommissionApproval[]
+
+  @@unique([organizationId, branchId, startsAt, endsAt])
+  @@index([organizationId, branchId, status, startsAt, endsAt])
+  @@index([approvedByUserId])
+  @@index([lockedByUserId])
+}
+
+model CommissionAdjustment {
+  id                  String                   @id @default(uuid()) @db.Uuid
+  organizationId      String                   @db.Uuid
+  branchId            String                   @db.Uuid
+  commissionHistoryId String                   @db.Uuid
+  commissionPeriodId  String                   @db.Uuid
+  bookingItemId       String                   @db.Uuid
+  employeeId          String                   @db.Uuid
+  commissionRuleId    String                   @db.Uuid
+  paymentRefundId     String?                  @db.Uuid
+  createdByUserId     String                   @db.Uuid
+  type                CommissionAdjustmentType
+  ruleName            String                   @db.VarChar(160)
+  commissionType      CommissionType
+  basis               CommissionBasis
+  baseAmount          Decimal                  @db.Decimal(12, 2)
+  percentageRate      Decimal?                 @db.Decimal(5, 2)
+  fixedAmount         Decimal?                 @db.Decimal(12, 2)
+  previousAmount      Decimal                  @db.Decimal(12, 2)
+  adjustmentAmount    Decimal                  @db.Decimal(12, 2)
+  resultingAmount     Decimal                  @db.Decimal(12, 2)
+  reason              String                   @db.VarChar(500)
+  calculatedAt        DateTime                 @default(now()) @db.Timestamptz(3)
+  createdAt           DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime                 @updatedAt @db.Timestamptz(3)
+  organization        Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch              Branch                   @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  commissionHistory   CommissionHistory        @relation(fields: [commissionHistoryId], references: [id], onDelete: Restrict)
+  commissionPeriod    CommissionPeriod         @relation(fields: [commissionPeriodId], references: [id], onDelete: Restrict)
+  bookingItem         BookingItem              @relation(fields: [bookingItemId], references: [id], onDelete: Restrict)
+  employee            Employee                 @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  commissionRule      CommissionRule           @relation(fields: [commissionRuleId], references: [id], onDelete: Restrict)
+  paymentRefund       PaymentRefund?           @relation(fields: [paymentRefundId], references: [id], onDelete: Restrict)
+  createdBy           User                     @relation("CommissionAdjustmentCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([paymentRefundId, bookingItemId])
+  @@index([organizationId, branchId, calculatedAt])
+  @@index([commissionHistoryId, calculatedAt])
+  @@index([commissionPeriodId, employeeId])
+  @@index([bookingItemId])
+  @@index([commissionRuleId])
+  @@index([createdByUserId])
+}
+
+model CommissionApproval {
+  id                  String            @id @default(uuid()) @db.Uuid
+  organizationId      String            @db.Uuid
+  branchId            String            @db.Uuid
+  commissionHistoryId String            @db.Uuid
+  commissionPeriodId  String            @db.Uuid
+  approvedByUserId    String            @db.Uuid
+  approvedAmount      Decimal           @db.Decimal(12, 2)
+  reason              String            @db.VarChar(500)
+  approvedAt          DateTime          @default(now()) @db.Timestamptz(3)
+  createdAt           DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime          @updatedAt @db.Timestamptz(3)
+  organization        Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch              Branch            @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  commissionHistory   CommissionHistory @relation(fields: [commissionHistoryId], references: [id], onDelete: Restrict)
+  commissionPeriod    CommissionPeriod  @relation(fields: [commissionPeriodId], references: [id], onDelete: Restrict)
+  approvedBy          User              @relation("CommissionApprovalCreatedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([commissionHistoryId, commissionPeriodId])
+  @@index([organizationId, branchId, approvedAt])
+  @@index([commissionPeriodId])
+  @@index([approvedByUserId])
+}
+
+model WorkingHour {
+  id               String         @id @default(uuid()) @db.Uuid
+  employeeBranchId String         @db.Uuid
+  dayOfWeek        Int
+  startTime        DateTime       @db.Time(0)
+  endTime          DateTime       @db.Time(0)
+  effectiveFrom    DateTime?      @db.Date
+  effectiveTo      DateTime?      @db.Date
+  isActive         Boolean        @default(true)
+  createdAt        DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @db.Timestamptz(3)
+  deletedAt        DateTime?      @db.Timestamptz(3)
+  employeeBranch   EmployeeBranch @relation(fields: [employeeBranchId], references: [id], onDelete: Restrict)
+
+  @@index([employeeBranchId, dayOfWeek, isActive, deletedAt])
+}
+
+model Holiday {
+  id        String    @id @default(uuid()) @db.Uuid
+  branchId  String    @db.Uuid
+  name      String    @db.VarChar(160)
+  startsAt  DateTime  @db.Timestamptz(3)
+  endsAt    DateTime  @db.Timestamptz(3)
+  isClosed  Boolean   @default(true)
+  notes     String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+  branch    Branch    @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+  @@index([branchId, startsAt, endsAt, deletedAt])
+}
+
+model EmployeeTimeOff {
+  id               String        @id @default(uuid()) @db.Uuid
+  employeeId       String        @db.Uuid
+  branchId         String?       @db.Uuid
+  reviewedByUserId String?       @db.Uuid
+  startsAt         DateTime      @db.Timestamptz(3)
+  endsAt           DateTime      @db.Timestamptz(3)
+  status           TimeOffStatus @default(PENDING)
+  reason           String?       @db.VarChar(500)
+  reviewedAt       DateTime?     @db.Timestamptz(3)
+  createdAt        DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime      @updatedAt @db.Timestamptz(3)
+  deletedAt        DateTime?     @db.Timestamptz(3)
+  employee         Employee      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  branch           Branch?       @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  reviewedBy       User?         @relation("TimeOffReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, startsAt, endsAt, status, deletedAt])
+  @@index([branchId, startsAt, endsAt])
+  @@index([reviewedByUserId])
+}
+
+model Setting {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @db.Uuid
+  branchId       String?          @db.Uuid
+  key            String           @db.VarChar(120)
+  value          Json
+  valueType      SettingValueType
+  description    String?          @db.VarChar(500)
+  isSensitive    Boolean          @default(false)
+  createdAt      DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @db.Timestamptz(3)
+  deletedAt      DateTime?        @db.Timestamptz(3)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  branch         Branch?          @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, key, deletedAt])
+  @@index([branchId, key, deletedAt])
+}
+
+model AuditLog {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  userId         String?      @db.Uuid
+  action         String       @db.VarChar(120)
+  entityType     String       @db.VarChar(120)
+  entityId       String?      @db.Uuid
+  metadata       Json?
+  ipAddress      String?      @db.Inet
+  userAgent      String?      @db.VarChar(500)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId, createdAt])
+  @@index([userId, createdAt])
+}
