@@ -9,6 +9,38 @@ const branchIdSchema = z.string().uuid()
 export class TenantService {
   constructor(private readonly store: TenantStore) {}
 
+  async getWorkspaceContext(principal: AuthenticatedPrincipal) {
+    const [organization, branches] = await Promise.all([
+      this.store.findOrganization(principal.organizationId),
+      this.listAccessibleBranches(principal),
+    ])
+    if (!organization) {
+      throw new AppError({
+        code: ErrorCode.TENANT_CONTEXT_INVALID,
+        statusCode: 403,
+        message: 'Organization context is unavailable',
+      })
+    }
+
+    const displayName = organization.name.trim() || organization.id
+    return {
+      organization: { ...organization, displayName },
+      branches,
+    }
+  }
+
+  async listAccessibleBranches(principal: AuthenticatedPrincipal): Promise<readonly {
+    id: string
+    name: string
+    isPrimary: boolean
+  }[]> {
+    const branches = await this.findAccessibleBranches(principal)
+    return branches.map((branch) => ({
+      ...branch,
+      isPrimary: branch.id === principal.primaryBranchId,
+    }))
+  }
+
   async resolveBranch(
     principal: AuthenticatedPrincipal,
     requestedBranchId: string | undefined,
@@ -22,11 +54,7 @@ export class TenantService {
       })
     }
 
-    const organizationWide = principal.grants.some((grant) => grant.branchId === null)
-    const assignedBranchIds = organizationWide
-      ? null
-      : [...new Set(principal.grants.flatMap((grant) => grant.branchId ? [grant.branchId] : []))]
-    const branches = await this.store.findAccessibleBranches(principal.organizationId, assignedBranchIds)
+    const branches = await this.findAccessibleBranches(principal)
 
     let selected = requestedBranchId
       ? branches.find((branch) => branch.id === requestedBranchId)
@@ -63,5 +91,13 @@ export class TenantService {
       roles: [...new Set(activeGrants.map((grant) => grant.roleName))],
       permissions: [...new Set(activeGrants.flatMap((grant) => grant.permissions))],
     }
+  }
+
+  private findAccessibleBranches(principal: AuthenticatedPrincipal) {
+    const organizationWide = principal.grants.some((grant) => grant.branchId === null)
+    const assignedBranchIds = organizationWide
+      ? null
+      : [...new Set(principal.grants.flatMap((grant) => grant.branchId ? [grant.branchId] : []))]
+    return this.store.findAccessibleBranches(principal.organizationId, assignedBranchIds)
   }
 }

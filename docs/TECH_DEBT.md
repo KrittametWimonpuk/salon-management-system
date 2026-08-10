@@ -104,6 +104,14 @@
 | TD-042 | 7 | P3 | Dashboard reads are not persisted to AuditLog to avoid high-volume audit growth | Request logs and in-process `DashboardViewed` events retain operational observability; generated reports/exports are audited | Define retention/cost policy and add sampled or dedicated analytics telemetry if compliance requires it |
 | TD-043 | 7 | P2 | ExcelJS 4.4.0 depends on `uuid` 8.x, which npm audit flags for the buffer form of UUID v3/v5/v6 | The report path uses ExcelJS workbook generation and its UUID v4 call only; CSV remains available; no untrusted UUID buffer is supplied | Upgrade when ExcelJS releases a compatible fixed dependency, or replace the exporter after compatibility and regression testing |
 
+### Phase 8A Frontend Auth Foundation
+
+| ID | Phase | Severity | Debt / Limitation | Current Mitigation | Exit Criteria |
+| --- | --- | --- | --- | --- | --- |
+| TD-045 | 8A | P2 | Cross-origin refresh-cookie behavior has API/browser-manual coverage but no automated deployed-browser E2E smoke test | API tests verify flags, rotation, reuse rejection, and clearing; frontend tests verify storage and retry bounds; `FRONTEND_E2E_COOKIE_CHECK.md` defines local and HTTPS checks | Automate the HTTPS checklist in deployment CI across supported browsers without exposing credentials or token values |
+
+Resolved in the Phase 8A release polish: TD-044. The additive tenant context now returns and renders the authoritative organization display name with PostgreSQL tenant-isolation coverage.
+
 ## Governance
 
 - ทุก debt ที่แก้ต้องมี migration/rollback strategy เมื่อแตะข้อมูลสำคัญ

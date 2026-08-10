@@ -11,7 +11,18 @@ const switchBranchSchema = z.object({ branchId: z.string().uuid() }).strict()
 
 export function createTenantRouter(authService: AuthService, tenantService: TenantService): Router {
   const router = Router()
-  router.post('/branch', authenticate(authService), validateBody(switchBranchSchema), asyncHandler(async (request, response) => {
+  const requireAuth = authenticate(authService)
+
+  router.get('/branches', requireAuth, asyncHandler(async (request, response) => {
+    const context = await tenantService.getWorkspaceContext(request.principal!)
+    sendSuccess(response, {
+      organization: context.organization,
+      branches: context.branches,
+      primaryBranchId: context.branches.find((branch) => branch.isPrimary)?.id ?? null,
+    })
+  }))
+
+  router.post('/branch', requireAuth, validateBody(switchBranchSchema), asyncHandler(async (request, response) => {
     const { branchId } = request.body as z.infer<typeof switchBranchSchema>
     const branch = await tenantService.resolveBranch(request.principal!, branchId, true)
     response.locals.auditContext = {

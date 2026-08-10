@@ -71,9 +71,11 @@ describe('authentication HTTP pipeline', () => {
     const agent = request.agent(app)
     const loginResponse = await login(agent)
     expect(loginResponse.status).toBe(200)
-    expect(loginResponse.headers['set-cookie']).toEqual(expect.arrayContaining([
-      expect.stringContaining('HttpOnly'),
-    ]))
+    const loginCookies = z.array(z.string()).parse(loginResponse.headers['set-cookie'])
+    const refreshCookie = loginCookies.find((cookie) => cookie.startsWith('salon_refresh='))
+    expect(refreshCookie).toContain('Path=/api/auth')
+    expect(refreshCookie).toContain('HttpOnly')
+    expect(refreshCookie).toContain('SameSite=Strict')
     const loginBody = successSchema.parse(loginResponse.body)
 
     const meResponse = await agent
@@ -85,6 +87,23 @@ describe('authentication HTTP pipeline', () => {
       data: {
         user: { organizationId: ids.organization },
         context: { branch: { id: ids.branch }, permissions: ['booking.read', 'setting.manage'] },
+      },
+    })
+
+    const branchesResponse = await agent
+      .get('/api/context/branches')
+      .set('Authorization', `Bearer ${loginBody.data.accessToken}`)
+    expect(branchesResponse.status).toBe(200)
+    expect(branchesResponse.body).toMatchObject({
+      success: true,
+      data: {
+        organization: {
+          id: ids.organization,
+          name: 'Salon Test Organization',
+          displayName: 'Salon Test Organization',
+        },
+        branches: [{ id: ids.branch, name: 'Main Branch', isPrimary: true }],
+        primaryBranchId: ids.branch,
       },
     })
   })
@@ -114,6 +133,8 @@ describe('authentication HTTP pipeline', () => {
     const refreshResponse = await agent.post('/api/auth/refresh').send({})
     expect(refreshResponse.status).toBe(200)
     expect(successSchema.parse(refreshResponse.body).data.accessToken).toBeTruthy()
+    const rotatedCookie = z.array(z.string()).parse(refreshResponse.headers['set-cookie'])[0]
+    expect(rotatedCookie?.split(';')[0]).not.toBe(oldRefreshCookie)
 
     const reuseResponse = await request(app)
       .post('/api/auth/refresh')
@@ -132,6 +153,11 @@ describe('authentication HTTP pipeline', () => {
 
     const logoutResponse = await agent.post('/api/auth/logout').set('Authorization', authorization).send({})
     expect(logoutResponse.status).toBe(200)
+    const clearedCookie = z.array(z.string()).parse(logoutResponse.headers['set-cookie'])[0]
+    expect(clearedCookie).toContain('salon_refresh=;')
+    expect(clearedCookie).toContain('Path=/api/auth')
+    expect(clearedCookie).toContain('HttpOnly')
+    expect(clearedCookie).toContain('SameSite=Strict')
 
     const meResponse = await agent.get('/api/auth/me').set('Authorization', authorization)
     expect(meResponse.status).toBe(401)

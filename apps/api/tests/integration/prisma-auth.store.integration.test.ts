@@ -106,9 +106,16 @@ describe.runIf(database !== null)('Prisma authentication and tenant integration'
     expect(rotated.refreshToken).not.toBe(login.refreshToken)
     expect(await database!.authSession.count()).toBe(2)
 
-    const context = await new TenantService(new PrismaTenantStore(database!))
-      .resolveBranch(principal, branch.id, true)
+    const tenant = new TenantService(new PrismaTenantStore(database!))
+    const context = await tenant.resolveBranch(principal, branch.id, true)
+    const workspace = await tenant.getWorkspaceContext(principal)
     expect(context?.branchId).toBe(branch.id)
+    expect(workspace.organization).toEqual({
+      id: organization.id,
+      name: 'Integration Organization',
+      displayName: 'Integration Organization',
+    })
+    expect(workspace.branches.map(({ id }) => id)).toEqual([branch.id])
     expect(await database!.branch.count({ where: { organizationId: organization.id } })).toBe(1)
   })
 })
