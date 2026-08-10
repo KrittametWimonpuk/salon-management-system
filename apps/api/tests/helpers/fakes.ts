@@ -103,7 +103,13 @@ export class FakeAuthStore implements AuthStore {
 
 export class FakeTenantStore implements TenantStore {
   lastOrganizationId: string | null = null
+  organization = { id: ids.organization, name: 'Salon Test Organization' }
   branches: AccessibleBranch[] = [{ id: ids.branch, name: 'Main Branch' }]
+
+  async findOrganization(organizationId: string) {
+    this.lastOrganizationId = organizationId
+    return this.organization.id === organizationId ? this.organization : null
+  }
 
   async findAccessibleBranches(organizationId: string, branchIds: string[] | null): Promise<AccessibleBranch[]> {
     this.lastOrganizationId = organizationId

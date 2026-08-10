@@ -30,6 +30,32 @@ describe('TenantService', () => {
     expect(context?.branchId).toBe(ids.branch)
   })
 
+  it('lists only accessible branches and identifies the principal primary branch', async () => {
+    const store = new FakeTenantStore()
+    store.branches = [
+      { id: ids.otherBranch, name: 'Second Branch' },
+      { id: ids.branch, name: 'Main Branch' },
+    ]
+    const branches = await new TenantService(store).listAccessibleBranches(principal())
+    expect(store.lastOrganizationId).toBe(ids.organization)
+    expect(branches).toEqual([
+      { id: ids.otherBranch, name: 'Second Branch', isPrimary: false },
+      { id: ids.branch, name: 'Main Branch', isPrimary: true },
+    ])
+  })
+
+  it('returns organization display context only for the authenticated tenant', async () => {
+    const store = new FakeTenantStore()
+    const context = await new TenantService(store).getWorkspaceContext(principal())
+
+    expect(store.lastOrganizationId).toBe(ids.organization)
+    expect(context.organization).toEqual({
+      id: ids.organization,
+      name: 'Salon Test Organization',
+      displayName: 'Salon Test Organization',
+    })
+  })
+
   it('rejects a branch outside the accessible organization scope', async () => {
     const store = new FakeTenantStore()
     await expect(new TenantService(store).resolveBranch(principal(), ids.otherBranch, true))

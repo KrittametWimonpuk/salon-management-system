@@ -13,6 +13,7 @@ Successful responses use `{ "success": true, "data": ..., "meta": ... }`. Failed
 | POST | `/api/auth/refresh` | Refresh cookie | - |
 | POST | `/api/auth/logout` | Access token | - |
 | GET | `/api/auth/me` | Access token | - |
+| GET | `/api/context/branches` | Access token | - |
 | POST | `/api/context/branch` | Access token | Existing branch access |
 | POST | `/api/customers` | Access token | `customer.create` |
 | GET | `/api/customers` | Access token | `customer.read` |
@@ -142,6 +143,24 @@ Pagination is returned in `meta`: `page`, `pageSize`, `totalItems`, and `totalPa
 Create accepts a future offset-aware `startsAt` and one to twenty ordered items. Update changes booking metadata only. Item removal is a status change, not a database delete. Cancellation and rescheduling require a non-empty reason.
 
 ## POS And Payment
+
+## Organization And Branch Context
+
+`GET /api/context/branches` is authenticated and tenant scoped. It preserves the existing `branches` and `primaryBranchId` fields and additionally returns the authoritative active organization context:
+
+```json
+{
+  "organization": {
+    "id": "<organization-uuid>",
+    "name": "Salon Group",
+    "displayName": "Salon Group"
+  },
+  "branches": [],
+  "primaryBranchId": null
+}
+```
+
+`displayName` uses the stored organization name after trimming and falls back to the authenticated organization ID only when the stored value is blank. Organization and branch lookups always use the organization ID from the authenticated principal; request input cannot select another organization.
 
 Checkout and payment routes accept only `COMPLETED` bookings in the resolved branch. Payment create requires `method`, a two-decimal string `amount`, and three-letter organization `currency`; `externalReference`, `idempotencyKey`, and `notes` are optional. Split create accepts two through ten payment entries and commits them atomically.
 
