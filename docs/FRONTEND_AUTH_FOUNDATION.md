@@ -11,9 +11,10 @@ apps/web/src/
 |-- api/          shared client, auth API, tenant/session API, safe errors
 |-- auth/         AuthProvider, protected routes, permission gate
 |-- branch/       BranchProvider, validated branch selection, runtime header state
-|-- components/   sidebar, topbar, feedback, theme controls
+|-- components/   sidebar, topbar, feedback, filters, data display, theme controls
+|-- features/     dashboard and report feature modules
 |-- layouts/      authentication and admin layouts
-|-- pages/        login, dashboard shell, forbidden, not found
+|-- pages/        login, forbidden, not found, future module placeholders
 |-- routes/       centralized route and permission definitions
 |-- config/       validated frontend environment
 |-- utils/        non-sensitive preferences and display helpers
@@ -112,6 +113,8 @@ All network traffic passes through `api/client.ts`. The client provides:
 - standard error mapping and validation details
 - single-flight `401` refresh and one retry
 - `403`, network, non-JSON, and internal error handling
+- authenticated binary responses for CSV/XLSX export
+- optional section-local `403` handling for permission-isolated dashboard widgets
 
 Components do not call `fetch` directly.
 
@@ -162,10 +165,10 @@ The browser procedure in `docs/FRONTEND_E2E_COOKIE_CHECK.md` covers checks that 
 
 ## Known Limitations
 
-- Business module routes are permission-protected placeholders only.
+- Customer, employee, service, booking, POS, commission-management, and settings routes remain permission-protected placeholders.
 - RBAC permission provisioning remains an operational prerequisite recorded in `TECH_DEBT.md`.
 - Automated deployed-browser cookie verification remains pending; local/API automation and a production HTTPS manual checklist cover the current release gate.
 
-## Phase 8B Readiness
+## Phase 8B Integration
 
-Phase 8B can build Dashboard and Reports screens on the existing protected layout. It can add `dashboard.api.ts`, query state, filters, charts, tables, and export interactions without changing token storage, refresh handling, branch selection, permission navigation, or route ownership.
+Phase 8B uses this foundation without changing token storage, refresh handling, branch selection, permission navigation, or route ownership. Dashboard/report requests and exports remain inside the shared client. See `DASHBOARD_REPORTS_UI.md` for feature architecture and verification.

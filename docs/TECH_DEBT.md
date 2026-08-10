@@ -112,6 +112,14 @@
 
 Resolved in the Phase 8A release polish: TD-044. The additive tenant context now returns and renders the authoritative organization display name with PostgreSQL tenant-isolation coverage.
 
+### Phase 8B Dashboard And Reports UI
+
+| ID | Phase | Severity | Debt / Limitation | Current Mitigation | Exit Criteria |
+| --- | --- | --- | --- | --- | --- |
+| TD-046 | 8B | P2 | Employee, service, and customer report-filter lookups return at most the first 100 active records because existing list envelopes are unwrapped without pagination metadata | Filters remain optional, branch/tenant scoped, permission gated, and never accept an inaccessible generated ID | Add a shared paged-envelope client and accessible debounced server-search combobox with large-tenant browser/integration coverage |
+
+Phase 8B intentionally uses CSS comparison bars and tables instead of a chart dependency. This is a product choice rather than debt while the current views remain readable and accessible; reassess with measured visualization requirements and bundle budgets.
+
 ## Governance
 
 - ทุก debt ที่แก้ต้องมี migration/rollback strategy เมื่อแตะข้อมูลสำคัญ

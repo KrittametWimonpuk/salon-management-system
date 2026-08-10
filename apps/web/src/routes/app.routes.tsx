@@ -5,7 +5,9 @@ import { useAuth } from '../auth/useAuth'
 import { LoadingScreen } from '../components/feedback/LoadingScreen'
 import { AdminLayout } from '../layouts/AdminLayout'
 import { AuthLayout } from '../layouts/AuthLayout'
-import { DashboardShellPage } from '../pages/DashboardShellPage'
+import { DashboardPage } from '../features/dashboard/DashboardPage'
+import { ReportDetailPage } from '../features/reports/ReportDetailPage'
+import { ReportsPage } from '../features/reports/ReportsPage'
 import { ForbiddenPage } from '../pages/ForbiddenPage'
 import { LoginPage } from '../pages/LoginPage'
 import { ModulePlaceholderPage } from '../pages/ModulePlaceholderPage'
@@ -31,8 +33,9 @@ export function AppRoutes() {
 
       <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
         <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<PermissionRoute permission="dashboard.read"><DashboardShellPage /></PermissionRoute>} />
-        <Route path="reports" element={<PermissionRoute permission="report.read"><ModulePlaceholderPage name="รายงาน" /></PermissionRoute>} />
+        <Route path="dashboard" element={<PermissionRoute permission="dashboard.read"><DashboardPage /></PermissionRoute>} />
+        <Route path="reports" element={<PermissionRoute permission="report.read"><ReportsPage /></PermissionRoute>} />
+        <Route path="reports/:reportPath" element={<PermissionRoute permission="report.read"><ReportDetailPage /></PermissionRoute>} />
         <Route path="customers" element={<PermissionRoute permission="customer.read"><ModulePlaceholderPage name="ลูกค้า" /></PermissionRoute>} />
         <Route path="employees" element={<PermissionRoute permission="employee.read"><ModulePlaceholderPage name="พนักงาน" /></PermissionRoute>} />
         <Route path="services" element={<PermissionRoute permission="service.read"><ModulePlaceholderPage name="บริการ" /></PermissionRoute>} />

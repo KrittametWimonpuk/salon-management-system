@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { AuthContext, type AuthContextValue } from '../auth/auth.context'
+import { BranchContext, type BranchContextValue } from '../branch/branch.context'
 
 export function authValue(overrides: Partial<AuthContextValue> = {}): AuthContextValue {
   const permissions = overrides.permissions ?? ['dashboard.read']
@@ -34,4 +35,23 @@ export function authValue(overrides: Partial<AuthContextValue> = {}): AuthContex
 
 export function AuthTestProvider({ value, children }: { value: AuthContextValue; children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export function branchValue(overrides: Partial<BranchContextValue> = {}): BranchContextValue {
+  const branch = { id: '30000000-0000-4000-8000-000000000001', name: 'Main', isPrimary: true }
+  return {
+    accessibleBranches: [branch],
+    currentBranch: branch,
+    primaryBranch: branch,
+    isLoading: false,
+    requiresSelection: false,
+    error: null,
+    setCurrentBranch: async () => undefined,
+    reloadBranches: async () => undefined,
+    ...overrides,
+  }
+}
+
+export function BranchTestProvider({ value = branchValue(), children }: { value?: BranchContextValue; children: ReactNode }) {
+  return <BranchContext.Provider value={value}>{children}</BranchContext.Provider>
 }

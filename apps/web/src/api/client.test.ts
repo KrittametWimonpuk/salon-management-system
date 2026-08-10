@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { apiRequest, configureApiRuntime, resetApiClientForTests } from './client'
+import { apiBinaryRequest, apiRequest, configureApiRuntime, resetApiClientForTests } from './client'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -103,5 +103,40 @@ describe('api client', () => {
     expect(refresh).toHaveBeenCalledOnce()
     expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(onSessionExpired).toHaveBeenCalledOnce()
+  })
+
+  it('returns authenticated binary responses for report exports', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('report-data', {
+      headers: {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': 'attachment; filename="sales.csv"',
+      },
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await apiBinaryRequest('/reports/sales/export', { method: 'POST' })
+
+    expect(result.blob.size).toBe(11)
+    expect(result.blob.type).toBe('text/csv')
+    expect(result.contentDisposition).toContain('sales.csv')
+    expect(fetchMock).toHaveBeenCalledWith('/api/reports/sales/export', expect.objectContaining({ credentials: 'include' }))
+  })
+
+  it('can keep a forbidden widget response local to the widget', async () => {
+    const onForbidden = vi.fn()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({
+      success: false,
+      error: { code: 'PERMISSION_001', message: 'forbidden', details: [] },
+    }, 403)))
+    configureApiRuntime({
+      getAccessToken: () => 'token',
+      getBranchId: () => 'branch-1',
+      refreshAccessToken: async () => 'token',
+      onSessionExpired: vi.fn(),
+      onForbidden,
+    })
+
+    await expect(apiRequest('/widget', { notifyForbidden: false })).rejects.toMatchObject({ status: 403 })
+    expect(onForbidden).not.toHaveBeenCalled()
   })
 })
