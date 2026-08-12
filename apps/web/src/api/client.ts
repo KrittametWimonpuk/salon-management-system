@@ -29,6 +29,13 @@ export interface ApiRequestOptions extends Omit<RequestInit, 'headers'> {
   auth?: boolean
   branch?: boolean
   retryOnUnauthorized?: boolean
+  notifyForbidden?: boolean
+}
+
+export interface ApiBinaryResponse {
+  blob: Blob
+  contentDisposition: string | null
+  contentType: string
 }
 
 const emptyRuntime: ApiRuntime = {
@@ -65,11 +72,17 @@ async function parseEnvelope<T>(response: Response): Promise<SuccessEnvelope<T> 
   }
 }
 
-async function execute<T>(path: string, options: ApiRequestOptions, retried: boolean): Promise<T> {
+async function execute<T>(
+  path: string,
+  options: ApiRequestOptions,
+  retried: boolean,
+  responseType: 'json' | 'binary' = 'json',
+): Promise<T> {
   const {
     auth = true,
     branch = true,
     retryOnUnauthorized = true,
+    notifyForbidden = true,
     headers: requestedHeaders,
     ...requestInit
   } = options
@@ -107,7 +120,7 @@ async function execute<T>(path: string, options: ApiRequestOptions, retried: boo
     try {
       refreshPromise ??= runtime.refreshAccessToken().finally(() => { refreshPromise = null })
       await refreshPromise
-      return execute<T>(path, options, true)
+      return execute<T>(path, options, true, responseType)
     } catch (error) {
       runtime.onSessionExpired()
       throw error
@@ -119,8 +132,15 @@ async function execute<T>(path: string, options: ApiRequestOptions, retried: boo
   }
 
   const envelope = await parseEnvelope<T>(response)
+  if (responseType === 'binary' && response.ok) {
+    return {
+      blob: await response.blob(),
+      contentDisposition: response.headers.get('content-disposition'),
+      contentType: response.headers.get('content-type') ?? 'application/octet-stream',
+    } as T
+  }
   if (!response.ok || !envelope || !envelope.success) {
-    if (response.status === 403) runtime.onForbidden()
+    if (response.status === 403 && notifyForbidden) runtime.onForbidden()
     const payload = envelope && !envelope.success ? envelope.error : null
     throw new ApiError({
       code: payload?.code ?? `HTTP_${response.status || 500}`,
@@ -134,6 +154,10 @@ async function execute<T>(path: string, options: ApiRequestOptions, retried: boo
 
 export function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   return execute<T>(path, options, false)
+}
+
+export function apiBinaryRequest(path: string, options: ApiRequestOptions = {}): Promise<ApiBinaryResponse> {
+  return execute<ApiBinaryResponse>(path, options, false, 'binary')
 }
 
 export function resetApiClientForTests(): void {

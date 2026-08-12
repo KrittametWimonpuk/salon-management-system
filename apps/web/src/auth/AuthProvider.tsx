@@ -146,7 +146,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const updateOrganizationContext = useCallback((organization: OrganizationContext) => {
-    setState((current) => ({ ...current, organization }))
+    setState((current) => current.organization
+      && current.organization.id === organization.id
+      && current.organization.name === organization.name
+      && current.organization.displayName === organization.displayName
+      ? current
+      : { ...current, organization })
   }, [])
 
   const hasPermission = useCallback(

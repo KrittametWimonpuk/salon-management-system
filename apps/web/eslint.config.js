@@ -19,6 +19,7 @@ export default tseslint.config(
         Headers: 'readonly',
         Response: 'readonly',
         URL: 'readonly',
+        HTMLAnchorElement: 'readonly',
         crypto: 'readonly',
       },
     },

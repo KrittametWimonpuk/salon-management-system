@@ -8,9 +8,9 @@ Production-oriented multi-organization and multi-branch salon management platfor
 - Database-backed RBAC, tenant isolation, and branch context
 - Customer, employee, service, skill, booking, POS, payment, and commission domains
 - Dashboard and reporting APIs with CSV/XLSX export
-- React admin foundation with protected routes and permission navigation
+- React admin foundation with protected routes, permission navigation, operational dashboards, report previews, and authenticated exports
 
-Backend baseline: `v0.7.0`. Frontend Phase 8A is developed on `feature/phase-8a-frontend-auth-foundation`.
+Release baseline: `v0.8.0`. Frontend Phase 8B is developed on `feature/phase-8b-dashboard-reports-ui`.
 
 ## Stack
 
@@ -92,6 +92,7 @@ npm audit
 - [Security](docs/SECURITY.md)
 - [Frontend Auth Foundation](docs/FRONTEND_AUTH_FOUNDATION.md)
 - [Frontend Auth Cookie Smoke Check](docs/FRONTEND_E2E_COOKIE_CHECK.md)
+- [Dashboard And Reports UI](docs/DASHBOARD_REPORTS_UI.md)
 - [Technical Debt](docs/TECH_DEBT.md)
 
 ## License

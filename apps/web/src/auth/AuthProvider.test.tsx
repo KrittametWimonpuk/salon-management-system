@@ -43,6 +43,18 @@ function Probe() {
   )
 }
 
+let organizationProbeRenders = 0
+function OrganizationProbe() {
+  const auth = useAuth()
+  organizationProbeRenders += 1
+  const organization = {
+    id: session.user.organizationId,
+    name: 'Salon Group',
+    displayName: 'Salon Group',
+  }
+  return <button type="button" onClick={() => auth.updateOrganizationContext(organization)}>organization {auth.organization?.displayName}</button>
+}
+
 describe('AuthProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -50,6 +62,7 @@ describe('AuthProvider', () => {
     sessionStorage.clear()
     authApiMocks.refresh.mockRejectedValue(new ApiError({ code: 'AUTH_002', message: '', status: 401 }))
     authApiMocks.logout.mockResolvedValue({ loggedOut: true })
+    organizationProbeRenders = 0
   })
 
   it('loads user context after a successful login and keeps the access token in memory', async () => {
@@ -98,5 +111,19 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('authenticated'))
     expect(authApiMocks.refresh).toHaveBeenCalledOnce()
     expect(authApiMocks.me).toHaveBeenCalledOnce()
+  })
+
+  it('does not re-render when tenant discovery repeats the same organization context', async () => {
+    authApiMocks.refresh.mockResolvedValue({ accessToken: 'access-1', tokenType: 'Bearer', expiresIn: 900 })
+    authApiMocks.me.mockResolvedValue(session)
+    render(<AuthProvider><OrganizationProbe /></AuthProvider>)
+    await waitFor(() => expect(screen.getByRole('button')).toHaveTextContent(session.user.organizationId))
+
+    fireEvent.click(screen.getByRole('button'))
+    await waitFor(() => expect(screen.getByRole('button')).toHaveTextContent('Salon Group'))
+    const rendersAfterAuthoritativeContext = organizationProbeRenders
+    fireEvent.click(screen.getByRole('button'))
+
+    expect(organizationProbeRenders).toBe(rendersAfterAuthoritativeContext)
   })
 })
